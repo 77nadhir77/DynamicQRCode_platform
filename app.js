@@ -6,6 +6,7 @@ app.use(express.json());
 const sequelize = require("./db");
 const qrRoutes = require("./Routes/qrRoutes");
 const cors = require("cors");
+const QRCode = require("./models/qrcode");
 app.use(
   cors({
     origin: "*", // React app's origin
@@ -13,11 +14,17 @@ app.use(
   })
 );
 
-app.get("/", (req, res) => {
-  res.send("Hello World!");
+app.get("/", async(req, res) => {
+  try {
+    let QRCodes = await QRCode.findAll();
+    res.status(200).json({QRCodes});
+  } catch (error) {
+    console.error("Error in root route:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
-app.use('/api', qrRoutes);
+app.use("/api", qrRoutes);
 
 app.listen(port, async () => {
   console.log(`server running on port ${port}`);

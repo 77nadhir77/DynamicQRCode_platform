@@ -96,7 +96,7 @@ exports.redirectQRCode = async (req, res) => {
 };
 
 
-exports.upadateQRCode = async (req, res) => {
+exports.updateQRCode = async (req, res) => {
   const { id } = req.params;
   const { link } = req.body;
   try {
@@ -109,3 +109,33 @@ exports.upadateQRCode = async (req, res) => {
     res.status(500).send("Server error");
   }
 }
+
+
+exports.deleteQRCode = async (req, res) => {
+  const ids = req.body.selectedIds;
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: "Invalid or empty 'selectedIds'" });
+  }
+
+  try {
+    const records = await QRCode.findAll({
+      where: { id: ids },
+    });
+
+    if (records.length === 0) {
+      return res.status(404).json({ error: "QR codes not found" });
+    }
+
+    await QRCode.destroy({
+      where: { id: ids },
+    });
+
+    const newQRCodes = await QRCode.findAll();
+
+    return res.status(200).json({ message: "QR codes deleted successfully" , newQRCodes : newQRCodes });
+  } catch (error) {
+    console.error("Error deleting QR codes:", error); // optional but helpful
+    return res.status(500).json({ error: "Server error" });
+  }
+};

@@ -6,7 +6,8 @@ const qrController = require("../controller/qrController");
 // const upload = multer({ storage: storage });
 
 router.post("/create", qrController.createQRCode);
-router.put("/update/:id", qrController.upadateQRCode);
+router.put("/update/:id", qrController.updateQRCode);
 router.get("/redirect/:id", qrController.redirectQRCode);
+router.delete("/delete", qrController.deleteQRCode);
 
 module.exports = router;
