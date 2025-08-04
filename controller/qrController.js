@@ -139,3 +139,16 @@ exports.deleteQRCode = async (req, res) => {
     return res.status(500).json({ error: "Server error" });
   }
 };
+
+
+
+exports.getQRCode = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const record = await QRCode.findByPk(id);
+    if (!record) return res.status(404).send("Not found");
+    res.status(200).json(record);
+  } catch (error) {
+    res.status(500).send("Server error");
+  }
+}
