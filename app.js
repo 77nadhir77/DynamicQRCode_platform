@@ -7,6 +7,11 @@ const sequelize = require("./db");
 const qrRoutes = require("./Routes/qrRoutes");
 const cors = require("cors");
 const QRCode = require("./models/qrcode");
+const User = require("./models/User");
+const RefreshToken = require("./models/RefreshToken");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+
 app.use(
   cors({
     origin: process.env.FRONT_END_URL,
@@ -27,6 +32,122 @@ app.get("/", async(req, res) => {
 
 app.use("/api", qrRoutes);
 
+
+const generateAccessToken = (user) => {
+	return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "3m" });
+};
+
+const generateRefreshToken = async (user) => {
+	const refreshToken = await jwt.sign(user, process.env.REFRESH_TOKEN_SECRET, {
+		expiresIn: "15d",
+	});
+
+	await RefreshToken.create({
+		token: refreshToken,
+		userId: user.id,
+		expiryDate: new Date(new Date().getTime() + 60000 * 60 * 24 * 15), // 15 days
+	});
+
+	return refreshToken;
+};
+
+app.post("/login", async (request, response) => {
+	//authenticate the user
+
+	const { username, password } = request.body;
+
+	const user = await User.findOne({ where: { username: username } });
+	if (!user) {
+		return response
+			.status(400)
+			.json({ message: "Invalid username or password" });
+	}
+
+	// Verify the password
+	const validPassword = await bcrypt.compare(password, user.password);
+	if (!validPassword) {
+		return response
+			.status(400)
+			.json({ message: "Invalid username or password" });
+	}
+
+	const userRefreshToken = await RefreshToken.findOne({
+		where: { userId: user.id, status: "valid" },
+	});
+	if (userRefreshToken) {
+		userRefreshToken.status = "invalid";
+		await userRefreshToken.save();
+	}
+
+	const accessToken = generateAccessToken({
+		id: user.id,
+		username: user.username,
+		role: user.role,
+	});
+	const refreshToken = await generateRefreshToken({
+		id: user.id,
+		username: user.username,
+		role: user.role,
+	});
+	response.json({ accessToken, refreshToken });
+});
+
+app.post("/token", async (request, response) => {
+	const refreshToken = request.body.refreshToken;
+
+	if (refreshToken === null) return response.sendStatus(401);
+
+	console.log("Refresh Token:", refreshToken);
+
+	const storedToken = await RefreshToken.findOne({
+		where: {
+			token: refreshToken,
+			status: "valid",
+		},
+	});
+
+	console.log("Stored Token:", storedToken);
+
+	if (!storedToken)
+		return response.status(403).json({ message: "the token is invalid" });
+
+	if (new Date() > storedToken.expiryDate) {
+		storedToken.status = "invalid";
+		await storedToken.save();
+		return response
+			.status(403)
+			.json({ message: "Refresh token has expired and is now invalid" });
+	}
+
+	await jwt.verify(
+		refreshToken,
+		process.env.REFRESH_TOKEN_SECRET,
+		async (err, user) => {
+			if (err) {
+				return response
+					.status(403)
+					.json({ message: "the token verification is unseccessfull" });
+			}
+
+			const accessToken = generateAccessToken({
+				id: user.id,
+				username: user.username,
+				role: user.role,
+			});
+
+			const newRefreshToken = await generateRefreshToken({
+				id: user.id,
+				username: user.username,
+				role: user.role,
+			});
+			storedToken.status = "invalid";
+			await storedToken.save();
+
+			response.status(200).json({ accessToken, refreshToken: newRefreshToken });
+		}
+	);
+});
+
 app.listen(port, async () => {
   console.log(`server running on port ${port}`);
 
@@ -36,6 +157,7 @@ app.listen(port, async () => {
       "Connection to the database has been established successfully."
     );
     await sequelize.sync({ force: false });
+    await User.sync({ force: false });
 
     console.log("All models were synchronized successfully.");
   } catch (error) {
