@@ -9,7 +9,8 @@ const cors = require("cors");
 const QRCode = require("./models/qrcode");
 app.use(
   cors({
-    origin: "*", // React app's origin
+    origin: process.env.FRONT_END_URL,
+    methods: ["GET", "POST", "PUT", "DELETE"], // React app's origin
     credentials: true, // Allow credentials (cookies) to be sent
   })
 );

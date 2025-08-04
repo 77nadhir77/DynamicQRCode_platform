@@ -2,7 +2,7 @@ const qrcode = require("qrcode");
 const QRCode = require("../models/qrcode");
 const { createCanvas, loadImage } = require("canvas");
 require("dotenv").config();
-const cloudinary = require('../utils/cloudinaryConfig').cloudinary;
+const cloudinary = require("../utils/cloudinaryConfig").cloudinary;
 const streamifier = require("streamifier");
 
 exports.createQRCode = async (req, res) => {
@@ -21,19 +21,32 @@ exports.createQRCode = async (req, res) => {
           type: "image/png",
         }
       );
-      const canvasSize = 300;
-      const canvas = createCanvas(canvasSize, canvasSize + 40); // Extra space for ID text
+      const canvasSize = 900;
+      const ctxMargin = 50; // how much inside the QR we draw the ID
+      const canvas = createCanvas(canvasSize, canvasSize);
       const ctx = canvas.getContext("2d");
 
-      // Draw QR code image
+      // Load and draw the QR code image (full size)
       const qrImage = await loadImage(qrcodeData);
       ctx.drawImage(qrImage, 0, 0, canvasSize, canvasSize);
 
-      // Draw ID text below QR code
-      ctx.font = "bold 20px Arial";
+      // Format ID (4 digits minimum)
+      const idText =
+        newQRCode.id < 1000
+          ? String(newQRCode.id).padStart(4, "0")
+          : String(newQRCode.id);
+
+      // Prepare text style
+      ctx.save();
+      ctx.font = "bold 36px Arial"; // larger font
       ctx.fillStyle = "black";
       ctx.textAlign = "center";
-      ctx.fillText(`ID: ${newQRCode.id}`, canvasSize / 2, canvasSize + 30);
+
+      // Move origin to slightly inside the right side of QR and center vertically
+      ctx.translate(canvasSize - ctxMargin, canvasSize / 2);
+      ctx.rotate(Math.PI / 2); // 90° clockwise
+      ctx.fillText(`ID: ${idText}`, 0, 0); // draw at new origin
+      ctx.restore();
 
       // Send image
       const buffer = canvas.toBuffer("image/png");
@@ -95,7 +108,6 @@ exports.redirectQRCode = async (req, res) => {
   }
 };
 
-
 exports.updateQRCode = async (req, res) => {
   const { id } = req.params;
   const { link } = req.body;
@@ -108,8 +120,7 @@ exports.updateQRCode = async (req, res) => {
   } catch (error) {
     res.status(500).send("Server error");
   }
-}
-
+};
 
 exports.deleteQRCode = async (req, res) => {
   const ids = req.body.selectedIds;
@@ -133,14 +144,15 @@ exports.deleteQRCode = async (req, res) => {
 
     const newQRCodes = await QRCode.findAll();
 
-    return res.status(200).json({ message: "QR codes deleted successfully" , newQRCodes : newQRCodes });
+    return res.status(200).json({
+      message: "QR codes deleted successfully",
+      newQRCodes: newQRCodes,
+    });
   } catch (error) {
     console.error("Error deleting QR codes:", error); // optional but helpful
     return res.status(500).json({ error: "Server error" });
   }
 };
-
-
 
 exports.getQRCode = async (req, res) => {
   const { id } = req.params;
@@ -151,4 +163,4 @@ exports.getQRCode = async (req, res) => {
   } catch (error) {
     res.status(500).send("Server error");
   }
-}
+};
