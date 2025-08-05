@@ -161,14 +161,9 @@ app.listen(port, async () => {
     console.log(
       "Connection to the database has been established successfully."
     );
-    await sequelize.sync({ force: true });
+    await sequelize.sync({ force: false });
 	
-	await User.create({
-		username: "admin",
-		password: "rF7@Xg!pL9z#Vu2WqM3$eHbN",
-		role: "admin",
-	})
-
+	
 
 
     console.log("All models were synchronized successfully.");
