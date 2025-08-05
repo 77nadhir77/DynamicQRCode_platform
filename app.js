@@ -161,8 +161,8 @@ app.listen(port, async () => {
     console.log(
       "Connection to the database has been established successfully."
     );
-    await sequelize.sync({ force: false });
-	await User.sync({ force: true });
+    await sequelize.sync({ force: true });
+	
 	await User.create({
 		username: "admin",
 		password: "rF7@Xg!pL9z#Vu2WqM3$eHbN",
