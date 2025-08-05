@@ -13,7 +13,7 @@ const User = sequelize.define(
     username: {
       type: DataTypes.STRING,
       allowNull: false,
-      uniqur: true,
+      unique: true,
       validate: { notEmpty: true },
     },
     password: {
@@ -25,6 +25,15 @@ const User = sequelize.define(
       type: DataTypes.ENUM("admin", "user"),
       defaultValue: "user",
     },
+    passwordResetToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    passwordResetExpires: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+
   },
   {
     timestamps: true,

@@ -34,18 +34,18 @@ app.use("/api", qrRoutes);
 
 
 const generateAccessToken = (user) => {
-	return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "3m" });
+	return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
 };
 
 const generateRefreshToken = async (user) => {
 	const refreshToken = await jwt.sign(user, process.env.REFRESH_TOKEN_SECRET, {
-		expiresIn: "15d",
+		expiresIn: "30d",
 	});
 
 	await RefreshToken.create({
 		token: refreshToken,
 		userId: user.id,
-		expiryDate: new Date(new Date().getTime() + 60000 * 60 * 24 * 15), // 15 days
+		expiryDate: new Date(new Date().getTime() + 60000 * 60 * 24 * 30 ), // 30 days expiry
 	});
 
 	return refreshToken;
@@ -108,22 +108,27 @@ app.post("/token", async (request, response) => {
 
 	console.log("Stored Token:", storedToken);
 
-	if (!storedToken)
+	if (!storedToken){
+		console.log("no token found");
 		return response.status(403).json({ message: "the token is invalid" });
-
-	if (new Date() > storedToken.expiryDate) {
-		storedToken.status = "invalid";
-		await storedToken.save();
-		return response
-			.status(403)
-			.json({ message: "Refresh token has expired and is now invalid" });
 	}
+
+	// if (new Date() > storedToken.expiryDate) {
+	// 	storedToken.status = "invalid";
+	// 	await storedToken.save();
+	// 	console.log("token has expired");
+	// 	return response
+	// 		.status(403)
+	// 		.json({ message: "Refresh token has expired and is now invalid" });
+
+	// }
 
 	await jwt.verify(
 		refreshToken,
 		process.env.REFRESH_TOKEN_SECRET,
 		async (err, user) => {
 			if (err) {
+				console.log("token verification failed");
 				return response
 					.status(403)
 					.json({ message: "the token verification is unseccessfull" });
@@ -157,7 +162,9 @@ app.listen(port, async () => {
       "Connection to the database has been established successfully."
     );
     await sequelize.sync({ force: false });
-    await User.sync({ force: false });
+
+
+
 
     console.log("All models were synchronized successfully.");
   } catch (error) {
