@@ -4,7 +4,6 @@ const { createCanvas, loadImage } = require("canvas");
 require("dotenv").config();
 const cloudinary = require("../utils/cloudinaryConfig").cloudinary;
 const streamifier = require("streamifier");
-const path = require("path");
 
 exports.createQRCode = async (req, res) => {
   try {
@@ -39,9 +38,9 @@ exports.createQRCode = async (req, res) => {
         svgData
       ).toString("base64")}`;
 
-      const logoPath = path.join(__dirname, "./logo.png");
 
-      const logo = await loadImage(logoPath);
+
+      const logo = await loadImage("https://res.cloudinary.com/dpxpmkxhw/image/upload/v1754437588/uploads/uwuewiyttqispwb7eszi.png");
       console.log("Loaded logo dimensions:", logo.width, logo.height);
 
       const logoSize = canvasSize * 0.2;
