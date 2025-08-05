@@ -4,6 +4,7 @@ const { createCanvas, loadImage } = require("canvas");
 require("dotenv").config();
 const cloudinary = require("../utils/cloudinaryConfig").cloudinary;
 const streamifier = require("streamifier");
+const path = require("path");
 
 exports.createQRCode = async (req, res) => {
   try {
@@ -17,7 +18,7 @@ exports.createQRCode = async (req, res) => {
       });
       let svgData = await qrcode.toString(
         `${process.env.QRCODE_LINK}/${newQRCode.id}`,
-        { type: "svg"}
+        { type: "svg" }
       );
       const canvasSize = 900;
       const ctxMargin = 50; // how much inside the QR we draw the ID
@@ -25,9 +26,9 @@ exports.createQRCode = async (req, res) => {
       const ctx = canvas.getContext("2d");
 
       // Load and draw the QR code image (full size)
-      
+
       // Add required width and height to make it renderable by canvas
-      
+
       if (!svgData.includes("width") && !svgData.includes("height")) {
         svgData = svgData.replace(
           "<svg",
@@ -38,8 +39,27 @@ exports.createQRCode = async (req, res) => {
         svgData
       ).toString("base64")}`;
 
+      const logoPath = path.join(__dirname, "./logo.png");
+
+      const logo = await loadImage(logoPath);
+      console.log("Loaded logo dimensions:", logo.width, logo.height);
+
+      const logoSize = canvasSize * 0.2;
+      const dx = (canvasSize - logoSize) / 2;
+      const dy = (canvasSize - logoSize) / 2;
+
       const qrImage = await loadImage(svgBase64);
       ctx.drawImage(qrImage, 0, 0, canvasSize, canvasSize);
+      // Optional: white rounded box behind logo
+      ctx.fillStyle = "white";
+      ctx.beginPath();
+      ctx.roundRect
+        ? ctx.roundRect(dx, dy, logoSize, logoSize, 10)
+        : ctx.rect(dx, dy, logoSize, logoSize); // fallback if roundRect not supported
+      ctx.fill();
+
+      // Draw the logo
+      ctx.drawImage(logo, dx, dy, logoSize, logoSize);
 
       // Format ID (4 digits minimum)
       const idText =
