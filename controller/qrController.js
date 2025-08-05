@@ -15,10 +15,9 @@ exports.createQRCode = async (req, res) => {
       const newQRCode = await QRCode.create({
         link: redirectUrl,
       });
-      const qrcodeData = await qrcode.toDataURL(
-        process.env.QRCODE_LINK + "/" + newQRCode.id,
-
-        { width: 1000, errorCorrectionLevel: "H", type: "image/png" }
+      let svgData = await qrcode.toString(
+        `${process.env.QRCODE_LINK}/${newQRCode.id}`,
+        { type: "svg"}
       );
       const canvasSize = 900;
       const ctxMargin = 50; // how much inside the QR we draw the ID
@@ -26,7 +25,20 @@ exports.createQRCode = async (req, res) => {
       const ctx = canvas.getContext("2d");
 
       // Load and draw the QR code image (full size)
-      const qrImage = await loadImage(qrcodeData);
+      
+      // Add required width and height to make it renderable by canvas
+      
+      if (!svgData.includes("width") && !svgData.includes("height")) {
+        svgData = svgData.replace(
+          "<svg",
+          `<svg width="${canvasSize}" height="${canvasSize}"`
+        );
+      }
+      const svgBase64 = `data:image/svg+xml;base64,${Buffer.from(
+        svgData
+      ).toString("base64")}`;
+
+      const qrImage = await loadImage(svgBase64);
       ctx.drawImage(qrImage, 0, 0, canvasSize, canvasSize);
 
       // Format ID (4 digits minimum)
