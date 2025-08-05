@@ -17,9 +17,8 @@ exports.createQRCode = async (req, res) => {
       });
       const qrcodeData = await qrcode.toDataURL(
         process.env.QRCODE_LINK + "/" + newQRCode.id,
-        {
-          type: "image/png",
-        }
+
+        { width: 1000, errorCorrectionLevel: "H", type: "image/png" }
       );
       const canvasSize = 900;
       const ctxMargin = 50; // how much inside the QR we draw the ID
