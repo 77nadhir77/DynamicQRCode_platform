@@ -1,6 +1,6 @@
 require("dotenv").config();
 const cloudinary = require("cloudinary").v2;
-const fs = require("fs");
+
 
 // Configure Cloudinary (make sure .env has correct values)
 cloudinary.config({
@@ -10,7 +10,7 @@ cloudinary.config({
 });
 
 // Use a local image for testing
-const filePath = "African-Grey.jpg"; // Place a small PNG image in your project root
+const filePath = "./controller/slogo2-removebg-preview.png"; // Place a small PNG image in your project root
 
 cloudinary.uploader.upload(filePath, { folder: "uploads" }, (error, result) => {
   if (error) {
