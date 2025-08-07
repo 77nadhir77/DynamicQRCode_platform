@@ -110,7 +110,7 @@ exports.createQRCode = async (req, res) => {
 
 
     // Draw text
-    ctx.fillStyle = "#4B12BC"; // text color
+    ctx.fillStyle = "#222222"; // text color
     ctx.fillText(`ID: ${idText}`, 0, 0); // draw at new origin
     ctx.restore();
 
