@@ -6,28 +6,65 @@ const cloudinary = require("../utils/cloudinaryConfig").cloudinary;
 const streamifier = require("streamifier");
 const QRCodeSVG = require("qrcode-svg");
 
+// exports.createQRCodeID = async (req, res) => {
+//   try {
+//     let redirectUrl = req.body.redirectUrl;
+
+//     console.log(redirectUrl);
+//     if (!redirectUrl) {
+//       return res.status(400).json({ error: "Redirect URL is required" });
+//     } else {
+//       const newQRCode = await QRCode.create({
+//         link: redirectUrl,
+//       });
+
+//       return res.status(200).json({
+//         message: "QR code created",
+//         qrCodeId: newQRCode.id,
+//       });
+//     }
+//   } catch (err) {
+//     console.error("Controller error:", err); // Add this line
+//     return res.status(500).json({ error: err, message: err.message });
+//   }
+// };
+
+
 exports.createQRCodeID = async (req, res) => {
   try {
     let redirectUrl = req.body.redirectUrl;
 
-    console.log(redirectUrl);
-    if (!redirectUrl) {
-      return res.status(400).json({ error: "Redirect URL is required" });
-    } else {
-      const newQRCode = await QRCode.create({
-        link: redirectUrl,
-      });
-
-      return res.status(200).json({
-        message: "QR code created",
-        qrCodeId: newQRCode.id,
-      });
+    if (!redirectUrl || redirectUrl.length === 0) {
+      return res.status(400).json({ error: "Redirect URLs are required" });
     }
+
+    // Si un seul lien → convertir en tableau
+    if (!Array.isArray(redirectUrl)) {
+      redirectUrl = [redirectUrl];
+    }
+
+    // Crée plusieurs QR Codes
+    const createdQRCodes = await Promise.all(
+      redirectUrl.map(async (url) => {
+        if(url && url.trim().length > 0){
+          const newQRCode = await QRCode.create({ link: url });
+          return { id: newQRCode.id, link: newQRCode.link };
+        }
+      })
+    );
+
+    console.log("Created QR Codes:", createdQRCodes);
+
+    return res.status(200).json({
+      message: "QR codes created",
+      qrCodes: createdQRCodes, // liste des objets créés
+    });
   } catch (err) {
-    console.error("Controller error:", err); // Add this line
+    console.error("Controller error:", err);
     return res.status(500).json({ error: err, message: err.message });
   }
 };
+
 
 exports.createQRCode = async (req, res) => {
   try {
@@ -45,24 +82,6 @@ exports.createQRCode = async (req, res) => {
     console.log(qrImagefile);
     console.log(id);
 
-    // let svgData = await qrcode.toString(
-    //   `${process.env.QRCODE_LINK}/${newQRCode.id}`,
-    //   { type: "svg" }
-    // );
-
-    // const qr = new QRCodeSVG({
-    //   content: `${process.env.QRCODE_LINK}/${newQRCode.id}`,
-    //   padding: 3,
-    //   width: 700,
-    //   height: 700,
-    //   color: "#000000",
-    //   background: "transparent",
-    // });
-    // let svgString = qr.svg();
-
-    //  const svgBase64 = `data:image/svg+xml;base64,${Buffer.from(
-    //   svgString
-    // ).toString("base64")}`;
 
     const canvasSize = 1400;
     const extraWidth = 150;
@@ -71,29 +90,10 @@ exports.createQRCode = async (req, res) => {
 
     const ctx = canvas.getContext("2d");
 
-    // Load and draw the QR code image (full size)
-    //const logo = await loadImage("https://res.cloudinary.com/dpxpmkxhw/image/upload/v1754446721/uploads/uhalnszbafahgaw3lsic.png")
-
-    // Add required width and height to make it renderable by canvas
-
-    // const logoSize = canvasSize * 0.2;
-    // const dx = (canvasSize - logoSize) / 2;
-    // const dy = (canvasSize - logoSize) / 2;
 
     const qrImage = await loadImage(qrImagefile);
     ctx.drawImage(qrImage, 0, 0, canvasSize, canvasSize);
-    // // Optional: white rounded box behind logo
-    // ctx.fillStyle = "white";
-    // ctx.beginPath();
-    // ctx.roundRect
-    //   ? ctx.roundRect(dx, dy, logoSize, logoSize, 10)
-    //   : ctx.rect(dx, dy, logoSize, logoSize); // fallback if roundRect not supported
-    // ctx.fill();
-
-    // Draw the logo
-    //.drawImage(logo, dx, dy, logoSize, logoSize);
-
-    // Format ID (4 digits minimum)
+  
     const idText = id < 1000 ? String(id).padStart(4, "0") : String(id);
 
     // Prepare text style
@@ -110,7 +110,7 @@ exports.createQRCode = async (req, res) => {
 
 
     // Draw text
-    ctx.fillStyle = "#4B12BC"; // text color
+    ctx.fillStyle = "#222222"; // text color
     ctx.fillText(`ID: ${idText}`, 0, 0); // draw at new origin
     ctx.restore();
 
