@@ -10,7 +10,7 @@ cloudinary.config({
 });
 
 // Use a local image for testing
-const filePath = "./controller/slogo2-removebg-preview.png"; // Place a small PNG image in your project root
+const filePath = "./controller/IMG_8332.png"; // Place a small PNG image in your project root
 
 cloudinary.uploader.upload(filePath, { folder: "uploads" }, (error, result) => {
   if (error) {

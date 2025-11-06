@@ -153,7 +153,7 @@ app.post("/token", async (request, response) => {
 	);
 });
 
-app.listen(port, async () => {
+app.listen(port, "0.0.0.0", async () => {
   console.log(`server running on port ${port}`);
 
   try {
@@ -162,8 +162,6 @@ app.listen(port, async () => {
       "Connection to the database has been established successfully."
     );
     await sequelize.sync({ force: false });
-	
-	
 
 
     console.log("All models were synchronized successfully.");
