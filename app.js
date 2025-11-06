@@ -153,7 +153,7 @@ app.post("/token", async (request, response) => {
 	);
 });
 
-app.listen(port, "0.0.0.0", async () => {
+app.listen(port, async () => {
   console.log(`server running on port ${port}`);
 
   try {
