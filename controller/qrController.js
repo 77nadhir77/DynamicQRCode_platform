@@ -1,6 +1,6 @@
 const qrcode = require("qrcode");
 const QRCode = require("../models/qrcode");
-const { createCanvas, loadImage } = require("canvas");
+const QRCodeStyling = require("qr-code-styling");
 require("dotenv").config();
 const cloudinary = require("../utils/cloudinaryConfig").cloudinary;
 const streamifier = require("streamifier");
@@ -66,59 +66,139 @@ exports.createQRCodeID = async (req, res) => {
 };
 
 
+// exports.createQRCode = async (req, res) => {
+//   try {
+//     let id = req.body.qrCodeId;
+//     if (!req.file) {
+//       return res.status(400).json({ error: "No file uploaded" });
+//     }
+//     let qrImagefile = req.file.path;
+
+//     if (!id || !qrImagefile) {
+//       return res
+//         .status(400)
+//         .json({ error: "QR code ID and image are required" });
+//     }
+//     console.log(qrImagefile);
+//     console.log(id);
+
+
+//     const canvasSize = 1400;
+//     const extraWidth = 150;
+//     //const ctxMargin = 50; // how much inside the QR we draw the ID
+//     const canvas = createCanvas(canvasSize + extraWidth, canvasSize);
+
+//     const ctx = canvas.getContext("2d");
+
+
+//     const qrImage = await loadImage(qrImagefile);
+//     ctx.drawImage(qrImage, 0, 0, canvasSize, canvasSize);
+  
+//     const idText = id < 1000 ? String(id).padStart(4, "0") : String(id);
+
+//     // Prepare text style
+//     ctx.save();
+//     ctx.font = "bold 48px Arial"; // larger font
+//     ctx.textAlign = "center";
+//     ctx.textBaseline = "middle";
+
+
+//     // Move origin to slightly inside the right side of QR and center vertically
+//     ctx.translate(canvasSize + extraWidth / 2, canvasSize / 2); // 30px margin away from the QR code
+//     ctx.rotate(Math.PI / 2); // 90° clockwise
+
+
+
+//     // Draw text
+//     ctx.fillStyle = "#222222"; // text color
+//     ctx.fillText(`ID: ${idText}`, 0, 0); // draw at new origin
+//     ctx.restore();
+
+//     // Send image
+//     const buffer = canvas.toBuffer("image/png");
+
+//     const uploadFromBuffer = async (buffer) => {
+//       return new Promise((resolve, reject) => {
+//         const cld_upload_stream = cloudinary.uploader.upload_stream(
+//           {
+//             folder: "uploads",
+//             resource_type: "image",
+//             public_id: `qrcode_${id}`,
+//             format: "png",
+//           },
+//           (error, result) => {
+//             if (error) {
+//               console.error("Cloudinary error:", error);
+//               return reject(error);
+//             }
+//             resolve(result);
+//           }
+//         );
+
+//         const readStream = streamifier.createReadStream(buffer);
+//         readStream.on("error", (err) => {
+//           console.error("Read stream error:", err);
+//           reject(err);
+//         });
+
+//         readStream.pipe(cld_upload_stream);
+//       });
+//     };
+
+//     console.log("About to upload to Cloudinary...");
+//     const cloudinaryResult = await uploadFromBuffer(buffer);
+//     console.log("Cloudinary upload finished:", cloudinaryResult);
+//     console.log(cloudinaryResult.secure_url);
+//     await QRCode.update(
+//       { image: cloudinaryResult.secure_url },
+//       { where: { id: id } }
+//     );
+//     return res.status(200).json({
+//       message: "QR code created and uploaded to Cloudinary",
+//       imageUrl: cloudinaryResult.secure_url,
+//     });
+//   } catch (err) {
+//     console.error("Controller error:", err); // Add this line
+//     return res.status(500).json({ error: err, message: err.message });
+//   }
+// };
+
+
+const QRCodeStyling = require("qr-code-styling");
+const cloudinary = require("cloudinary").v2;
+const streamifier = require("streamifier");
+const { QRCode } = require("../models"); // adjust path
+
 exports.createQRCode = async (req, res) => {
   try {
-    let id = req.body.qrCodeId;
+    const id = req.body.qrCodeId;
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
-    let qrImagefile = req.file.path;
 
-    if (!id || !qrImagefile) {
-      return res
-        .status(400)
-        .json({ error: "QR code ID and image are required" });
+    if (!id) {
+      return res.status(400).json({ error: "QR code ID is required" });
     }
-    console.log(qrImagefile);
-    console.log(id);
 
+    const qrCodeText = id < 1000 ? String(id).padStart(4, "0") : String(id);
 
-    const canvasSize = 1400;
-    const extraWidth = 150;
-    //const ctxMargin = 50; // how much inside the QR we draw the ID
-    const canvas = createCanvas(canvasSize + extraWidth, canvasSize);
+    // Generate QR code
+    const qrCode = new QRCodeStyling({
+      width: 1400,
+      height: 1400,
+      data: qrCodeText,
+      image: req.file.path, // your uploaded logo or image
+      dotsOptions: { color: "#000", type: "rounded" },
+      backgroundOptions: { color: "#ffffff" },
+      imageOptions: { crossOrigin: "anonymous", margin: 5 },
+    });
 
-    const ctx = canvas.getContext("2d");
+    // Convert QR code to buffer
+    const buffer = await qrCode.getRawData("png");
 
-
-    const qrImage = await loadImage(qrImagefile);
-    ctx.drawImage(qrImage, 0, 0, canvasSize, canvasSize);
-  
-    const idText = id < 1000 ? String(id).padStart(4, "0") : String(id);
-
-    // Prepare text style
-    ctx.save();
-    ctx.font = "bold 48px Arial"; // larger font
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-
-
-    // Move origin to slightly inside the right side of QR and center vertically
-    ctx.translate(canvasSize + extraWidth / 2, canvasSize / 2); // 30px margin away from the QR code
-    ctx.rotate(Math.PI / 2); // 90° clockwise
-
-
-
-    // Draw text
-    ctx.fillStyle = "#222222"; // text color
-    ctx.fillText(`ID: ${idText}`, 0, 0); // draw at new origin
-    ctx.restore();
-
-    // Send image
-    const buffer = canvas.toBuffer("image/png");
-
-    const uploadFromBuffer = async (buffer) => {
-      return new Promise((resolve, reject) => {
+    // Upload to Cloudinary
+    const uploadFromBuffer = (buffer) =>
+      new Promise((resolve, reject) => {
         const cld_upload_stream = cloudinary.uploader.upload_stream(
           {
             folder: "uploads",
@@ -127,39 +207,28 @@ exports.createQRCode = async (req, res) => {
             format: "png",
           },
           (error, result) => {
-            if (error) {
-              console.error("Cloudinary error:", error);
-              return reject(error);
-            }
+            if (error) return reject(error);
             resolve(result);
           }
         );
 
-        const readStream = streamifier.createReadStream(buffer);
-        readStream.on("error", (err) => {
-          console.error("Read stream error:", err);
-          reject(err);
-        });
-
-        readStream.pipe(cld_upload_stream);
+        streamifier.createReadStream(buffer).pipe(cld_upload_stream);
       });
-    };
 
-    console.log("About to upload to Cloudinary...");
     const cloudinaryResult = await uploadFromBuffer(buffer);
-    console.log("Cloudinary upload finished:", cloudinaryResult);
-    console.log(cloudinaryResult.secure_url);
+
     await QRCode.update(
       { image: cloudinaryResult.secure_url },
-      { where: { id: id } }
+      { where: { id } }
     );
+
     return res.status(200).json({
       message: "QR code created and uploaded to Cloudinary",
       imageUrl: cloudinaryResult.secure_url,
     });
   } catch (err) {
-    console.error("Controller error:", err); // Add this line
-    return res.status(500).json({ error: err, message: err.message });
+    console.error("Controller error:", err);
+    return res.status(500).json({ error: err.message });
   }
 };
 
