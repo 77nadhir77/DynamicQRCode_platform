@@ -164,10 +164,6 @@ exports.createQRCodeID = async (req, res) => {
 // };
 
 
-const QRCodeStyling = require("qr-code-styling");
-const cloudinary = require("cloudinary").v2;
-const streamifier = require("streamifier");
-const { QRCode } = require("../models"); // adjust path
 
 exports.createQRCode = async (req, res) => {
   try {
