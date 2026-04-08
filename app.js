@@ -29,6 +29,14 @@ app.get("/", async(req, res) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
+app.get("/ping", async(req, res) => {
+  try {
+    res.send("pong");
+  } catch (error) {
+    console.error("Error in root route:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 app.use("/api", qrRoutes);
 
